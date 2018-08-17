@@ -1,0 +1,558 @@
+vault write auth/github/config organization=digitalonus
+vault write auth/github/map/teams/default value=default
+vault read auth/github/map/teams/default
+vault login -method=github token="<Personal Access Token>"
+
+
+
+vault login 5d9e40a3-eb45-7e9b-53ff-e32a70dfabe0
+vault secrets enable database
+
+--- Primero se crea la conexión
+vault write database/config/myapp \
+    plugin_name="postgresql-database-plugin" \
+    connection_url="postgresql://postgres:postgres@postgres:5432/myapp?sslmode=disable" \
+    allowed_roles="my-role, readonly"
+
+vault read /database/config/myapp
+	Key                   Value
+	---                   -----
+	allowed_roles         [my-role]
+	connection_details    map[connection_url:postgresql://postgres:postgres@postgres:5432/myapp?sslmode=disable]
+	plugin_name           postgresql-database-plugin
+
+--- Enseguida se crea el role. Para crear el ROLE tenemos dos opciones:
+--- opcion 1
+cat my-role.sql
+CREATE ROLE "{{name}}" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO "{{name}}";
+
+vault write database/roles/my-role \
+    db_name=myapp \
+    creation_statements=@my-role.sql \
+    default_ttl="1m" \
+    max_ttl="1h"
+
+    Success! Data written to: database/roles/my-role
+
+--- opcion 2
+vault write database/roles/my-role \
+    db_name=myapp \
+    creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
+    default_ttl="1m" \
+    max_ttl="1h"
+
+
+psql -U postgres -h postgres myapp
+
+
+curl --header "X-Vault-Token: 03b3a117-0684-7aa0-c8ea-c51ff92f90d4" https://localhost/v1/postgresql/creds/my-role?sslmode=disable
+
+--- Finalmente se generan las credenciales dinámicamente
+vault read /database/creds/my-role
+
+--- Se pueden revocar las credenciales
+vault lease revoke -prefix database/creds
+
+--- Para crear un auth como userpass
+vault write auth/userpass/users/sethvargo password=training policies=base
+	Success! Data written to: auth/userpass/users/sethvargo
+
+--- Exercise 1
+Create a new policy named "contractor" that grants only the ability to generate readonly credentials from the database backend.
+
+Create new userpass authentication that attaches the above policy. Use the username "sandy" and the password "training".
+
+Authenticate as this user and generate a postgressql credential.
+
+-- a) Create the policy contractor.hcl
+path "database/creds/readonly" {
+	capabilities = ["read"]
+}
+
+-- b) Write the policy
+vault policy write contractor ./contractor.hcl
+or
+vault write sys/policy/contractor policy=@contractor.hcl
+
+-- c) Create a user and assign the user to a policy
+vault write auth/userpass/users/sandy password=training policies=contractor
+
+
+-- d) Authenticate the user
+vault login -method=userpass username=sandy password=training 
+or
+vault write auth/userpass/login/sandy password=training
+
+-- e) Generate the postgresql credential
+vault read database/creds/readonly
+
+--- VAULT CONFIGURATION
+Vault is configured with one or more configuration files
+Configuration defines 1 storage backend and 1+ listeners
+Vault is run via a supervisor (upstart, systemd) or a scheduler (nomad, k8s, openshift, etc)
+Initialization is required before use
+
+-- config file example config.hcl
+# Use the file backend - this will write encrypted data to disk.
+storage "file" {
+	path = "/workstation/vault/data"
+}
+
+# Listen on a different port (8201), which will allow us to run multiple Vault's simultaneously.
+listener "tcp" {
+	address     = "127.0.0.1:8201"
+	tls_disable = 1
+}
+
+-- sudo systemctl start vault-2
+-- vault status -address=http://127.0.0.1:8201
+-- vault init -address=http://127.0.0.1:8201
+
+
+
+--- GENERATE ROOT TOKEN
+--
+vault unseal
+--
+vault operator generate-root -generate-otp
+drMdasu1SY5vlNea9j+Q9g==
+--
+~ # vault operator generate-root -init -otp="drMdasu1SY5vlNea9j+Q9g=="
+Nonce       9c7f1c19-d678-bd88-69d0-58329f5bc070
+Started     true
+Progress    0/3
+Complete    false
+~ # vault operator generate-root -otp="drMdasu1SY5vlNea9j+Q9g=="
+Root generation operation nonce: 9c7f1c19-d678-bd88-69d0-58329f5bc070
+Unseal Key (will be hidden):
+Nonce       9c7f1c19-d678-bd88-69d0-58329f5bc070
+Started     true
+Progress    1/3
+Complete    false
+~ # vault operator generate-root -otp="drMdasu1SY5vlNea9j+Q9g=="
+Root generation operation nonce: 9c7f1c19-d678-bd88-69d0-58329f5bc070
+Unseal Key (will be hidden):
+Nonce       9c7f1c19-d678-bd88-69d0-58329f5bc070
+Started     true
+Progress    2/3
+Complete    false
+~ # vault operator generate-root -otp="drMdasu1SY5vlNea9j+Q9g=="
+Root generation operation nonce: 9c7f1c19-d678-bd88-69d0-58329f5bc070
+Unseal Key (will be hidden):
+Nonce         9c7f1c19-d678-bd88-69d0-58329f5bc070
+Started       true
+Progress      3/3
+Complete      true
+Root Token    JfGQkg89hPP8cKEdobA72A==
+~ # vault operator generate-root -otp="drMdasu1SY5vlNea9j+Q9g==" -decode="JfGQkg89hPP8cKEdobA72A=="
+53428df8-c488-cd7d-93e4-7687578fab2e
+
+--- VAUL CLI vs API
+-- CLI
+~ # vault read secret/training
+Key                 Value
+---                 -----
+refresh_interval    168h
+city                nyc
+food                chicken fingers
+-- API
+~ # curl -s --request GET http://localhost:8200/v1/secret/training --header "X-Vault-Token: 53428df8-c488-cd7d-93e4-7687578fab2e" | jq "."
+{
+  "request_id": "8b5c0d03-8477-0259-ec9d-65123f531b65",
+  "lease_id": "",
+  "renewable": false,
+  "lease_duration": 604800,
+  "data": {
+    "city": "nyc",
+    "food": "chicken fingers"
+  },
+  "wrap_info": null,
+  "warnings": null,
+  "auth": null
+}
+
+-- CLI2
+vault list secret
+-- API2
+curl -s --request LIST http://localhost:8200/v1/secret --header "X-Vault-Token: 53428df8-c488-cd7d-93e4-7687578fab2e" | jq "."
+
+-- CLI3
+vault write secret/foo bar=1
+-- API3
+curl --request POST http://localhost:8200/v1/secret/foo --header "X-Vault-Token: 53428df8-c488-cd7d-93e4-7687578fab2e" --data '{"bar":"1"}'
+
+-- CLI4
+vault read database/creds/readonly
+-- API4
+curl -s --request GET http://localhost:8200/v1/database/creds/readonly --header "X-Vault-Token: 53428df8-c488-cd7d-93e4-7687578fab2e" | jq "."
+
+-- CLI5
+vault login -method=userpass username=sandy password=training 
+-- API5
+curl -s --request POST http://localhost:8200/v1/auth/userpass/login/sandy --header "X-Vault-Token: 53428df8-c488-cd7d-93e4-7687578fab2e" --data '{"password":"training"}' | jq "."
+
+
+--- ABOUT CONSUL TEMPLATE
+Despite it's name, Consul Template does not require a Consul cluster to operate.
+Retrieves secrets from Vault and manages the acquisition and renewal lifecycle.
+Requires a token (VAULT_TOLEN) to operate
+Interpolate the values for you
+
+-- 1) descargas el consul-template y lo descomprimes
+~ # vwget https://releases.hashicorp.com/consul-template/0.19.4/consul-template_0.19.4_linux_amd64.tgz
+
+-- 2) Creas el template (config.yml.tpl)
+~ # cat config.yml.tpl
+---
+{{- with secret "database/creds/readonly" }}
+username: "{{ .Data.username }}"
+password: "{{ .Data.password }}"
+database: "myapp"
+{{- end }}
+
+-- 3) Creas un token para poder crear credenciales
+~ # vault token create -policy=contractor
+Key                Value
+---                -----
+token              1e33bece-6832-cc83-b999-818e720054d5
+token_accessor     82289a75-e314-f39f-d728-99230c0afbc1
+token_duration     168h
+token_renewable    true
+token_policies     [contractor default]
+
+-- 4) Generas el archivo con los valores generados
+~ # VAULT_TOKEN="1e33bece-6832-cc83-b999-818e720054d5" ./consul-template -template="config.yml.tpl:config.yml" -once
+~ # cat config.yml
+username: "v-token-readonly-24w413rzs7tutx73rtr2-1521522290"
+password: "A1a-tyxq5suszxu86125"
+database: "myapp"
+
+
+--- ABOUT ENVCONSUL
+Despite it's name, Envconsul does not require a Consul cluster to operate.
+Retrieves secrets from Vault and manages the acquisition and renewal lifecycle.
+Requires a token (VAULT_TOLEN) to operate
+Interpolate the values for you
+
+-- Example
+envconsul -secret secret/training -secret secret/foo env
+
+-- Installation
+wget https://releases.hashicorp.com/envconsul/0.7.3/envconsul_0.7.3_linux_amd64.tgz
+
+-- Use
+~ # ./envconsul -secret secret/training -secret secret/foo env
+2018/03/20 05:16:19.785786 looking at vault secret/training
+2018/03/20 05:16:19.785827 looking at vault secret/foo
+SHLVL=1
+PWD=/root
+HOSTNAME=6939ee41b20d
+VAULT_ADDR=http://127.0.0.1:8200
+secret_training_food=chicken fingers
+secret_foo_bar=1
+TERM=xterm
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+VAULT_VERSION=0.9.3
+secret_training_city=nyc
+
+-- Templating (app.rb)
+~ # cat app.rb
+puts <<-STRING.strip
+My connection info is:
+
+  username: #{ENV["DATABASE_CREDS_READONLY_USERNAME"]}
+  username: #{ENV["DATABASE_CREDS_READONLY_PASSWORD"]}
+  database: "myapp"
+STRING
+	
+-- 
+~ # vault token create -policy=contractor
+Key                Value
+---                -----
+token              91ee1682-9bdb-bef8-a085-57b98be87c57
+token_accessor     00930360-cb1a-b316-cb7a-5926cb56d8c8
+token_duration     168h
+token_renewable    true
+token_policies     [contractor default]
+--
+~ # VAULT_TOKEN="91ee1682-9bdb-bef8-a085-57b98be87c57" ./envconsul -upcase -secret database/creds/readonly ./app.rb
+
+
+--- WRAPPED TOKENS
+
+-- 1) Se lee el valor y se obtiene un token a él, esto hace que el token se guarde en un cubbyhole
+~ # vault read -wrap-ttl="1h" secret/foo
+Key                              Value
+---                              -----
+wrapping_token:                  a4e74b9d-7d35-bb8a-aaca-484b9d6c040d
+wrapping_accessor:               be97bed2-7311-bc5b-fb3e-f594f88d0a75
+wrapping_token_ttl:              1h
+wrapping_token_creation_time:    2018-03-20 07:40:41.585257022 +0000 UTC
+wrapping_token_creation_path:    secret/foo
+
+-- 2) Se valida que el token apunte correctamente
+~ # vault token lookup a4e74b9d-7d35-bb8a-aaca-484b9d6c040d
+Key                 Value
+---                 -----
+accessor            be97bed2-7311-bc5b-fb3e-f594f88d0a75
+creation_time       1521531641
+creation_ttl        3600
+display_name        n/a
+entity_id           n/a
+expire_time         2018-03-20T08:40:41.598947074Z
+explicit_max_ttl    3600
+id                  a4e74b9d-7d35-bb8a-aaca-484b9d6c040d
+issue_time          2018-03-20T07:40:41.598941776Z
+meta                <nil>
+num_uses            1
+orphan              true
+path                secret/foo
+policies            [response-wrapping]
+renewable           false
+ttl                 2517
+
+-- 3) Se hace unwrap del token
+~ # vault write sys/wrapping/unwrap token=a4e74b9d-7d35-bb8a-aaca-484b9d6c040d
+Key                 Value
+---                 -----
+refresh_interval    168h
+bar                 1
+
+-- 4) Una vez que el token se utilizo, ya no puede ser utilizado de nuevo
+~ # vault write sys/wrapping/unwrap token=a4e74b9d-7d35-bb8a-aaca-484b9d6c040d
+Error writing data to sys/wrapping/unwrap: Error making API request.
+
+URL: PUT http://127.0.0.1:8200/v1/sys/wrapping/unwrap
+Code: 400. Errors:
+
+* wrapping token is not valid or does not exist
+
+
+
+--- VAULT AUTH LDAP CONFIGURATION
+
+-- 1) Habilitar LDAP como auth backend
+~ # vault auth enable ldap
+Success! Enabled ldap auth method at: ldap/
+
+-- 2) Se configura LDAP como el auth backend
+~ # vault write auth/ldap/config \
+    url="ldap://ldap" \
+    binddn="cn=admin,dc=example,dc=org" \
+    userattr="uid" \
+    bindpass='admin' \
+    userdn="ou=Users,dc=example,dc=org" \
+    groupdn="ou=Groups,dc=example,dc=org" \
+    insecure_tls=true
+Success! Data written to: auth/ldap/config
+
+-- 3) Se crean las policies de admin y developer:
+
+developers_policy.hcl
+	path "secret/dev/*" {
+	  capabilities = ["create","read","delete","update","list"]
+	}
+	
+	path "secret/admin" {
+	  capabilities = ["deny"]
+	}
+
+admin_policy.hcl
+	path "secret/dev/*" {
+	  capabilities = ["read"]
+	}
+	
+	path "secret/admin/*" {
+	  capabilities = ["create","read","delete","update","list"]
+	}
+
+-- 4) Upload policies
+
+~ # vault policy write dev_policy ~/developers_policy.hcl
+Success! Uploaded policy: dev_policy
+
+~ # vault policy write admin_policy ~/admin_policy.hcl
+Success! Uploaded policy: admin_policy
+
+~ # vault policy list
+dev_policy
+admin_policy
+
+-- 5) Se asocian los LDAP groups a las policies 
+
+~ # vault write auth/ldap/groups/dev policies=dev_policy
+Success! Data written to: auth/ldap/groups/dev
+
+~ # vault read auth/ldap/groups/dev
+Key         Value
+---         -----
+policies    [dev_policy]
+
+~ # vault write auth/ldap/groups/admins policies=admin_policy
+Success! Data written to: auth/ldap/groups/admins
+
+~ # vault read auth/ldap/groups/admins
+Key         Value
+---         -----
+policies    [admin_policy]
+
+-- 6) Autenticación a traves de LDAP
+
+-- Dev User
+
+~ # vault login -method=ldap username=juser
+Password (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                    Value
+---                    -----
+token                  2ef9244b-3355-d71c-e7ca-efd4e5b81270
+token_accessor         a7cfa235-92b8-f1c0-d7c0-1dd46c52855c
+token_duration         168h
+token_renewable        true
+token_policies         [default dev_policy]
+token_meta_username    juser
+
+-- 7) Validar que en realidad se esta ejecutando la policy
+~ # vault write secret/dev/foo value=bar
+Success! Data written to: secret/dev/foo
+~ # vault read secret/dev/foo
+Key                 Value
+---                 -----
+refresh_interval    168h
+value               bar
+~ # vault write secret/admin/foo value=bar
+Error writing data to secret/admin/foo: Error making API request.
+
+URL: PUT http://127.0.0.1:8200/v1/secret/admin/foo
+Code: 403. Errors:
+
+* permission denied
+
+-- Admin User
+~ # vault login -method=ldap username=jlynch
+Password (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                    Value
+---                    -----
+token                  3e4bf20f-4d87-44fd-20e7-94a795d87a11
+token_accessor         82947f19-e0b4-66ae-f308-9ed929acb178
+token_duration         168h
+token_renewable        true
+token_policies         [admin_policy default]
+token_meta_username    jlynch
+~ # vault read secret/dev/foo
+Key                 Value
+---                 -----
+refresh_interval    168h
+value               bar
+~ # vault write secret/dev/foo value=bar1
+Error writing data to secret/dev/foo: Error making API request.
+
+URL: PUT http://127.0.0.1:8200/v1/secret/dev/foo
+Code: 403. Errors:
+
+* permission denied
+~ # vault write secret/admin/foo value=bar
+Success! Data written to: secret/admin/foo
+~ # vault read secret/admin/foo
+Key                 Value
+---                 -----
+refresh_interval    168h
+value               bar
+
+--- TOKENS IN VAULT
+
+-- Background
+- Main method of authentication
+- Tokens could be Static or Dinamic
+- External identities are mapped to tokens
+- Tokens are mapped to vault policies
+- Policies determan what an identity is allowed or not allowed to do
+
+-- Token Hierarchies
+- Child tokens can be created from parent tokens
+- Child token inherits everything from the parent
+- Revoking parent invalidates all children
+
+-- Token Accessors
+- Created when an auth token is created
+- Used to reference the actual token
+  Look up a token's properties
+  Look up a token's capabilities
+  Revoke the token
+- Typically used when an intermediate process is involved with generating and managing tokens
+
+-- Token Renewal
+- All non-root tokens have a Time-to-live (TTL) value
+- TTL represents period of validity from creation or last renewal
+- Policies determine TTL value and renewal ability
+- Root tokens CAN optionally have a TTL assigned
+- When TTL passes token is revoked
+- Users must renew token within the TTL to avoid revocation
+
+
+--- RESPONSE WRAPPING
+-- Response Wrapping
+- Vault responds with a reference to the actual secret rather than the secret itself
+- Typical use case - Separating trusted and end user responsibilities
+	Only Trusted Entity has responsibility of managing Vault access to Vault API and is responsible for passing secrets back to end user
+- Handled on a per-request basis
+
+-- Benefits of Response Wrapping
+- Provides Cover. Ensures the data being passed back to the client is not the actual secret
+- Provides Malfeasance Protection. Ensures only a single party accesses the secret
+- Limits the secret exposure. Response Wrapping token has a short lived TTL separate from actual secret
+
+--- CREATING AN AUTHENTICATION TOKEN
+
+-- 1) Se crea el auth user (userpass)
+
+~ # vault write auth/userpass/users/bob password=password
+Success! Data written to: auth/userpass/users/bob
+
+-- 2) Nos authenticamos con Vault con el usuario creado anteriormente 
+~ # vault login -method=userpass username=bob
+Password (will be hidden):
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                    Value
+---                    -----
+token                  aff119e2-b570-6cb1-eb94-acc86f9cb8ab
+token_accessor         20a53650-f18b-2815-1b26-1d0e62f915ff
+token_duration         168h
+token_renewable        true
+token_policies         [default]
+token_meta_username    bob
+
+-- 3) Nos autenticamos utilizando el token que se creo:
+
+~ # vault token lookup
+Key                 Value
+---                 -----
+accessor            20a53650-f18b-2815-1b26-1d0e62f915ff
+creation_time       1522904150
+creation_ttl        604800
+display_name        userpass-bob
+entity_id           5181b530-b29a-50cd-08b1-71c2be28ca2a
+expire_time         2018-04-12T04:55:50.041304464Z
+explicit_max_ttl    0
+id                  aff119e2-b570-6cb1-eb94-acc86f9cb8ab
+issue_time          2018-04-05T04:55:50.040719956Z
+meta                map[username:bob]
+num_uses            0
+orphan              true
+path                auth/userpass/login/bob
+policies            [default]
+renewable           true
+ttl                 604517
+

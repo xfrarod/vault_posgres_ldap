@@ -1,0 +1,61 @@
+#version: '2'
+#services:
+  vault:
+    image: vault:0.9.3
+    container_name: vault
+    net: local_network
+    ports:
+      - "127.0.0.1:8200:8200"
+    volumes:
+      - ./vault/data:/vault/data:rw
+      - ./vault/config:/vault/config:rw
+      - ./vault/logs:/vault/logs:rw
+    cap_add:
+      - IPC_LOCK
+    entrypoint: vault server -config=/vault/config
+    environment:
+    - VAULT_ADDR=http://127.0.0.1:8200
+    - KEY1=Rz7nccNNLEE0e0W+yQPB6KrATAMmNmuUGYGHaS6aMhBe
+    - KEY2=OIHfdY93utohv4EyZaMS8FDTyjTzmay4UrSNghF5LOTl
+    - KEY3=iYTOc19DXO/lJhoui4Xf+U9Eic1IkOkLL9cz4I246pPG
+    - KEY4=30vVo6EqJ0bXv6d4DGLS3ql127FqQc37Y7l8hFI87v6v
+    - KEY5=bwPEaO85ixhLnTnAtJ4lPkbo+96U/GzzLOUxDXee6b4Z
+    - ROOT_TOKEN=5d9e40a3-eb45-7e9b-53ff-e32a70dfabe0
+
+  ldap:
+    image: osixia/openldap:1.2.0
+    container_name: ldap
+    net: local_network
+    ports:
+    - "389:389"
+    - "636:636"
+    environment:
+    - LDAP_TLS=false
+    volumes:
+      - ./ldap/config:/etc/ldap/slapd.d:rw
+      - ./ldap/db:/var/lib/ldap:rw
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.7.0
+    container_name: phpldapadmin
+    net: local_network
+    ports:
+    - "8888:80"
+    environment:
+    - PHPLDAPADMIN_LDAP_HOSTS=ldap
+    - PHPLDAPADMIN_HTTPS=false
+
+  postgres:
+    image: postgres:9
+    container_name: postgres
+    net: local_network
+    ports:
+    - "5432:5432"
+    environment:
+    - POSTGRES_DB=myapp
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data:rw
+
+
