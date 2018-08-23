@@ -22,13 +22,13 @@ For the different configurations please have a look at the *vault_notes.txt* fil
 2. [Vault installed] (https://www.vaultproject.io/intro/getting-started/install.html)
 
 ### Steps
-1. Start the environment: ```docker compose up -d```
-2. Set the Vault server host: ```export VAULT_ADDR=http://127.0.0.1:8200```
-3. Unseal Vault: repeat 3 times ```vault operator unseal <KEY?>```
+1. Start the environment: ```docker-compose up -d```
+2. Set the Vault server host: ```export VAULT_ADDR='http://127.0.0.1:8200'```
+3. Unseal Vault: repeat 3 times ```vault operator unseal <KEY>```
 4. Login to Vault: ```vault login <ROOT_TOKEN>```
 5. Get a postgres credential: ```vault read database/creds/readonly```
 
 ### Validate postgres user was created
 1. connect to postgres container ```docker exec -it postgres /bin/bash```
-2. inside the container, connect to db ```PGPASSWORD='postgres' psql -h localhost:5432 -u postgress myapp```
+2. inside the container, connect to db ```psql -h localhost -U postgres myapp```
 3. inside postrgres db, check the users: ```myapp> \du```
