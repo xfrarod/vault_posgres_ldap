@@ -1,7 +1,7 @@
 #version: '2'
 #services:
   vault:
-    image: vault:0.9.3
+    image: vault:1.0.0
     container_name: vault
     net: local_network
     ports:
@@ -55,7 +55,10 @@
     - POSTGRES_DB=myapp
     - POSTGRES_USER=postgres
     - POSTGRES_PASSWORD=postgres
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data:rw
+    #volumes:
+    #  - ./pg_data:/var/lib/postgresql/data:rw
+
+
+#$ docker run --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=myapp -d postgres
 
 
