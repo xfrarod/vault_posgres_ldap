@@ -35,7 +35,7 @@ For the different configurations please have a look at the *vault_notes.txt* fil
 
 
 
-#SECRETS
+# STATIC SECRETS
 
 ## key-value
 
