@@ -169,7 +169,7 @@ $ vault write database/roles/my-role \
     creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' \
     VALID UNTIL '{{expiration}}'; 
     GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
-    default_ttl="5m" \
+    default_ttl="3m" \
     max_ttl="1h"
     
 Success! Data written to: database/roles/my-role
@@ -204,6 +204,14 @@ $ curl --header "X-Vault-Token: ${ROOT_TOKEN}" http://localhost:8200/v1/database
   "warnings": null,
   "auth": null
 }
+```
+###Renew lease
+```
+vault lease renew database/creds/my-role/5OidV08wNZLXkWgYTxR84n3u
+```
+###Revoke lease
+```
+vault lease revoke database/creds/my-role/5OidV08wNZLXkWgYTxR84n3u
 ```
 ###Disable database secrets
 ```
