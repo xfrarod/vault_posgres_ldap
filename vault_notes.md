@@ -1,45 +1,7 @@
-![alt text](https://www.datocms-assets.com/2885/1506458488-blog-vault-list.svg "Vault")
+#SECRETS
+##key-value
 
-# Hashicorp vault-posgres-ldap demo
-
-**Note:** This is a playground for using Vault with postgres and LDAP, all required keys for unseal and play around with vault vault are provided:
-
-    - Unseal KEY1 = Rz7nccNNLEE0e0W+yQPB6KrATAMmNmuUGYGHaS6aMhBe
-    - Unseal KEY2 = OIHfdY93utohv4EyZaMS8FDTyjTzmay4UrSNghF5LOTl
-    - Unseal KEY3 = iYTOc19DXO/lJhoui4Xf+U9Eic1IkOkLL9cz4I246pPG
-    - Unseal KEY4 = 30vVo6EqJ0bXv6d4DGLS3ql127FqQc37Y7l8hFI87v6v
-    - Unseal KEY5 = bwPEaO85ixhLnTnAtJ4lPkbo+96U/GzzLOUxDXee6b4Z
-    - ROOT_TOKEN  = 5d9e40a3-eb45-7e9b-53ff-e32a70dfabe0
-
-Vault initialized with 5 keys and a key threshold of 3. When the Vault is re-sealed, restarted, or stopped, you must provide at least 3 of these keys to unseal it again.
-
-For the different configurations please have a look at the *vault_notes.txt* file where you can find some commands that were used for vault's configuration.
-
-## Spining up the demo
-
-### Prerequisites
-1. [Docker installed] (https://docs.docker.com/install/)
-2. [Vault installed] (https://www.vaultproject.io/intro/getting-started/install.html)
-
-### Steps
-1. Start the environment: ```docker-compose up -d```
-2. Set the Vault server host: ```export VAULT_ADDR='http://127.0.0.1:8200'```
-3. Unseal Vault: repeat 3 times ```vault operator unseal <KEY>```
-4. Login to Vault: ```vault login <ROOT_TOKEN>```
-5. Get a postgres credential: ```vault read database/creds/readonly```
-
-### Validate postgres user was created
-1. connect to postgres container ```docker exec -it postgres /bin/bash```
-2. inside the container, connect to db ```psql -h localhost -U postgres myapp```
-3. inside postrgres db, check the users: ```myapp> \du```
-
-
-
-# STATIC SECRETS
-
-## key-value
-
-### Writing a kv
+###Writing
 ```
 $ vault kv put secret/hello foo=world
 
@@ -50,7 +12,7 @@ $ vault kv put secret/hello foo=world excited=yes
 
 Success! Data written to: secret/hello
 ```
-### Reading a kv
+###Reading
 ```
 $ vault kv get secret/hello
 ===== Data =====
@@ -78,13 +40,13 @@ $ vault kv get -format=json secret/hello
 $ vault kv get -format=json secret/hello | jq -r .data.excited
 yes
 ```
-### Deleting a kv
+###Deleting
 ```
 $ vault kv delete secret/hello
 
 Success! Data deleted (if it existed) at: secret/hello
 ```
-### Enabling secret to a different path
+###Enabling secret to a different path
 ```
 $ vault secrets enable -path=kv kv
 
@@ -94,7 +56,7 @@ $ vault secrets enable kv
 
 Success! Enabled the kv secrets engine at: kv/
 ```
-### Listing secrets
+###  Listing secrets
 ```
 $ vault secrets list
 Path           Type          Accessor               Description
@@ -108,37 +70,37 @@ postgresql/    postgresql    postgresql_2bb8a449    n/a
 secret/        kv            kv_84b82108            key/value secret storage
 sys/           system        system_381fa831        system endpoints used for control, policy and debugging
 ```
-### Disabling secrets engine
+###Disabling secrets engine
 ```
 $ vault secrets disable kv/
 
 Success! Disabled the secrets engine (if it existed) at: kv/
 ```
-## Cubbyhole
-### Write data
+##Cubbyhole
+###Write data
 ```
 $  vault write cubbyhole/my-company name=digitalonus
 ```
-### Read data
+###Read data
 ```
 $ vault read cubbyhole/my-company
 Key     Value
 ---     -----
 name    digitalonus
 ```
-### Delete data
+###Delete data
 ```
 $ vault delete cubbyhole/my-company
 Success! Data deleted (if it existed) at: cubbyhole/my-company
 ```
-# DYNAMIC SECRETS
-## aws
+#DYNAMIC SECRETS
+##aws
 ```
 $ vault secrets enable -path=aws aws
 
 Success! Enabled the aws secrets engine at: aws/
 ```
-### Configure aws engine
+###Configure aws engine
 ```
 $ vault write aws/config/root \
     access_key=AKIAI45GLQPBX6CSENIQ \
@@ -147,7 +109,7 @@ $ vault write aws/config/root \
 
 Success! Data written to: aws/config/root
 ```
-### Create a role
+###Create a role
 ```
 $ vault write aws/roles/my-role \
         credential_type=iam_user \
@@ -170,7 +132,7 @@ $ vault write aws/roles/my-role \
 EOF
 Success! Data written to: aws/roles/my-role
 ```
-### Generating the aws secret
+###Generating the aws secret
 ```
 $ vault read aws/creds/my-role
 Key                Value
@@ -182,37 +144,37 @@ access_key         AKIAJIKZCPA4R53C3NQQ
 secret_key         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
 security_token     <nil>
 ```
-### Revoking the aws secret
+###Revoking the aws secret
 ```
 % vault lease revoke aws/creds/my-role/7qgsZmIyaaBZT4yQboNdFW7a
 All revocation operations queued successfully!
 ```
-##  Postgres
-### Enable database secrets
+##Postgres
+###Enable database secrets
 ```
 $ vault secrets enable database
 Success! Enabled the database secrets engine at: database/
 ```
-### Configure postgres plugin
+###Configure postgres plugin
 ```
 $ vault write database/config/myapp \
     plugin_name="postgresql-database-plugin" \
     connection_url="postgresql://postgres:postgres@postgres:5432/myapp?sslmode=disable" \
     allowed_roles="my-role, readonly"
 ```
-### Create a role that maps a name in vault to an SQL statement to execute to create the DB credential
+###Create a role that maps a name in vault to an SQL statement to execute to create the DB credential
 ```
 $ vault write database/roles/my-role \
     db_name=myapp \
     creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' \
     VALID UNTIL '{{expiration}}'; 
     GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
-    default_ttl="5m" \
+    default_ttl="3m" \
     max_ttl="1h"
     
 Success! Data written to: database/roles/my-role
 ```
-### Generate postgres secret
+###Generate postgres secret
 ```
 $ vault read /database/creds/my-role
 
@@ -243,14 +205,22 @@ $ curl --header "X-Vault-Token: ${ROOT_TOKEN}" http://localhost:8200/v1/database
   "auth": null
 }
 ```
-### Disable database secrets
+###Renew lease
+```
+vault lease renew database/creds/my-role/5OidV08wNZLXkWgYTxR84n3u
+```
+###Revoke lease
+```
+vault lease revoke database/creds/my-role/5OidV08wNZLXkWgYTxR84n3u
+```
+###Disable database secrets
 ```
 $ vault secrets disable database
 Success! Disabled the secrets engine (if it existed) at: database/
 ```
-# AUTHENTICATION METHODS
+#AUTHENTICATION METHODS
 Auth methods are always prefixed with `auth/` in their path
-## Userpass
+##Userpass
 ```
 $ vault auth enable userpass
 ```
@@ -264,8 +234,8 @@ $vault login -method=userpass username=francisco
 Password (will be hidden):
 Success! You are now authenticated.
 ```
-## Tokens
-### Create tokens
+##Tokens
+###Create tokens
 By default, this will create a child token of your current token that inherits all the same policies. 
 
 ```
@@ -280,13 +250,13 @@ token_policies       ["root"]
 identity_policies    []
 policies             ["root"]
 ```
-### Revoke tokens
+###Revoke tokens
 ```
 $ vault token revoke s.6cbVs5i0cdVxna9wERQuHz7O
 Success! Revoked token (if it existed)
 ```
-## Github
-### Help
+##Github
+###Help
 You can ask for help information about any CLI auth method.
 
 ```
@@ -298,13 +268,13 @@ $ vault auth help token
 
 $ vault auth help github
 ```
-### Enable GitHub auth method
+###Enable GitHub auth method
 ```
 $ vault auth enable -path=github github
 
 Success! Enabled github auth method at: github/
 ```
-### Configure auth method
+###Configure auth method
 ```
 $ vault write auth/github/config organization=digitalonus
 Success! Data written to: auth/github/config
@@ -315,7 +285,7 @@ Success! Data written to: auth/github/map/teams/my-team
 
 The first command configures Vault to pull authentication data from the "digitalonus" organization on GitHub. The next command tells Vault to map any users who are members of the team "my-team" (in the hashicorp organization) to map to the policies "default" and "my-policy". These policies do not have to exist in the system yet - Vault will just produce a warning when we login
 
-### List all enabled auth methods and check config of one of them
+###List all enabled auth methods and check config of one of them
 ```
 % vault auth list
 Path         Type        Accessor                  Description
@@ -336,14 +306,15 @@ max_ttl         0s
 organization    digitalonus
 ttl             0s
 ```
-# AUDIT
-## File Audit Device
+
+#AUDIT
+##File Audit Device
 ```
 vault audit enable file file_path=/var/log/vault_audit.log
 ```
 
-# POLICIES
-### Create a policy
+#POLICIES
+###Create a policy
 ```
 vault policy write developer -<<EOF
 path "secret/training*" {
@@ -351,15 +322,15 @@ path "secret/training*" {
 }
 EOF
 ```
-### Policy that allows only read db credentials
+###Policy that allows only read db credentials
 ```
 vault policy write external -<<EOF
 path "database/creds/my-role" {
-  capabilities = ["read"]
+	capabilities = ["read"]
 }
 EOF
 ```
-### Create userpass user to assign such policy to
+###Create userpass user to assign such policy to
 ```
 vault write auth/userpass/users/francisco password=password policies=external
 ```

@@ -8,5 +8,11 @@ listener "tcp" {
   tls_disable = 1
 }
 
+telemetry {
+  statsd_address = "statsd:8125"
+}
+
 default_lease_ttl = "168h"
 max_lease_ttl = "720h"
+
+ui = true
