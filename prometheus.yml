@@ -1,17 +1,13 @@
-# my global config
 global:
-  scrape_interval:     5s
-  evaluation_interval: 10s
+  scrape_interval:     15s
+  evaluation_interval: 11s
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
 
 scrape_configs:
-- job_name: statsd_exporter
-
-  metrics_path: '/metrics'
-
-#  target_groups:
-#  - targets: ['promstatsd_statsd_exporter_1:9102']
-#    labels:
-#      exporter: 'statsd'
-
+- job_name: 'statsd_exporter'
+  scrape_interval: 5s
   static_configs:
-    - targets: ['statsd-exporter:9102']
+    - targets: ['statsd_exporter:9102']
