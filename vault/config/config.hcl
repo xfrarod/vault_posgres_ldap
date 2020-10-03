@@ -9,7 +9,7 @@ listener "tcp" {
 }
 
 telemetry {
-  statsd_address = "statsd:8125"
+  statsd_address = "statsd_exporter:9125"
 }
 
 default_lease_ttl = "168h"
