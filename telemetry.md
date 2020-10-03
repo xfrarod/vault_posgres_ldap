@@ -23,7 +23,7 @@ This is a playground for showcasing telemetry in vault, the following architectu
 
 
 ## Vault configuration
-Telemetry **stanza** is configured in vault configuration file [config.hcl](file:vault/config/config.hcl) by including the following configuration:
+Telemetry **stanza** is configured in vault configuration file [config.hcl](vault/config/config.hcl) by including the following configuration:
 
 ```
 telemetry {
@@ -34,12 +34,12 @@ telemetry {
 [Reference](https://www.vaultproject.io/docs/configuration/telemetry#statsd)
 
 ## Statsd-exporter configuration
-**statsd-exporter** translates StatsD metrics to Prometheus metrics via configured mapping rules. Mapping rules are configured on the file [statsd_mapping.conf](file:statsd_mapping.conf) and copied to the container at startup time.
+**statsd-exporter** translates StatsD metrics to Prometheus metrics via configured mapping rules. Mapping rules are configured on the file [statsd_mapping.conf](statsd_mapping.conf) and copied to the container at startup time.
 
 [Reference](https://github.com/prometheus/statsd_exporter)
 
 ## Prometheus configuration
-**prometeus** is configured via command-line flags and a configuration file [prometheus.yml](file:sprometheus.yml). The file is also copied to the container at startup time.
+**prometeus** is configured via command-line flags and a configuration file [prometheus.yml](sprometheus.yml). The file is also copied to the container at startup time.
 
 A *scrape_config* section is defined as a single job with the target and parameters describing how to scrape them. In the general case.
 
@@ -53,7 +53,7 @@ scrape_configs:
 [Reference](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 
 ## Grafana configuration
-Grafana is only configured with the prometheus datasource in order to have it ready after the starup. The configuration is provided on the file [prometheus.yaml](file:grafana/provisioning/datasources/prometheus.yaml), the file is also copied to the container at startup time.
+Grafana is only configured with the prometheus datasource in order to have it ready after the starup. The configuration is provided on the file [prometheus.yaml](grafana/provisioning/datasources/prometheus.yaml), the file is also copied to the container at startup time.
 
 ```
 datasources:
