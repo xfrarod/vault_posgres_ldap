@@ -15,19 +15,19 @@ resource "docker_container" "statsd_exporter" {
   command  = ["--statsd.mapping-config=/tmp/statsd_mapping.conf"]
   must_run = true
   networks_advanced {
-    name         = "local-network"
+    name = "local-network"
   }
   ports {
     internal = "9125"
     external = "9125"
     protocol = "tcp"
   }
-    ports {
+  ports {
     internal = "9125"
     external = "9125"
     protocol = "udp"
   }
-    ports {
+  ports {
     internal = "9102"
     external = "9102"
     protocol = "tcp"

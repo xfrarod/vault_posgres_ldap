@@ -10,7 +10,7 @@ resource "docker_container" "grafana" {
   image    = docker_image.this.name
   must_run = true
   networks_advanced {
-    name         = "local-network"
+    name = "local-network"
   }
   ports {
     internal = "3000"

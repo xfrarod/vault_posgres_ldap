@@ -15,7 +15,7 @@ resource "docker_container" "prometheus" {
   command  = ["--config.file=/tmp/prometheus.yml"]
   must_run = true
   networks_advanced {
-    name         = "local-network"
+    name = "local-network"
   }
   ports {
     internal = "9090"

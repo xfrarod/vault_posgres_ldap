@@ -10,9 +10,9 @@ resource "docker_image" "this" {
 resource "docker_container" "postgres" {
   name  = "postgres"
   image = docker_image.this.name
-  env   = ["POSTGRES_DB=myapp", 
-           "POSTGRES_USER=postgres",
-           "POSTGRES_PASSWORD=postgres"]
+  env = ["POSTGRES_DB=myapp",
+    "POSTGRES_USER=postgres",
+  "POSTGRES_PASSWORD=postgres"]
 
   ports {
     internal = "5432"
@@ -20,6 +20,6 @@ resource "docker_container" "postgres" {
     protocol = "tcp"
   }
   networks_advanced {
-    name         = "local-network"
+    name = "local-network"
   }
 }
