@@ -8,7 +8,7 @@
 This is a playground for showcasing telemetry in vault, the following architecture has bee implemented with docker containers and prepared to be span up using terraform:
 
 
-![Architecture](file:images/vault_telemetry.png)
+![Architecture](images/vault_telemetry.png)
 
 ## How to start
 
