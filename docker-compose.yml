@@ -4,7 +4,6 @@ services:
   vault:
     image: vault:1.0.0
     container_name: vault
-    #net: local_network
     ports:
       - "127.0.0.1:8200:8200"
     volumes:
@@ -23,22 +22,10 @@ services:
     - KEY5=bwPEaO85ixhLnTnAtJ4lPkbo+96U/GzzLOUxDXee6b4Z
     - ROOT_TOKEN=5d9e40a3-eb45-7e9b-53ff-e32a70dfabe0
 
-  statsd:
-    image: statsd/statsd:v0.9.0
-    container_name: statsd
-    #net: local_network
-    ports:
-    - "8125:8125/udp"
-    - "8126:8126"
-    volumes:
-      - "./statsd_config.js:/src/statsd/config.js"
-
   statsd_exporter:
     image: prom/statsd-exporter:v0.18.0
     container_name: statsd_exporter
     command: "--statsd.mapping-config=/tmp/statsd_mapping.conf"
-    #entrypoint: "/bin/statsd_exporter --statsd.mapping-config=/tmp/statsd_mapping.yml"
-    #net: local_network
     ports:
     - "9125:9125/udp"
     - "9125:9125/tcp"
@@ -49,46 +36,20 @@ services:
   prometheus:
     image: prom/prometheus:v2.21.0
     container_name: prometheus
-    command: "--config.file=/tmp/prometheus.yml --web.listen-address=0.0.0.0:9102"
-    #net: local_network
+    command: "--config.file=/tmp/prometheus.yml"
     ports:
     - "9090:9090"
     volumes:
     - "./prometheus.yml:/tmp/prometheus.yml"
 
-  #grafana:
-  #  image: grafana/grafana:7.2.0-ubuntu
-  #  container_name: grafana
-  #  #net: local_network
-  #  ports:
-  #  - "3000:3000"
-  #  environment:
-  #  - PHPLDAPADMIN_LDAP_HOSTS=ldap
-  #  - PHPLDAPADMIN_HTTPS=false
-
-
-  ldap:
-    image: osixia/openldap:1.2.0
-    container_name: ldap
-    #net: local_network
+  grafana:
+    image: grafana/grafana:7.2.0-ubuntu
+    container_name: grafana
     ports:
-    - "389:389"
-    - "636:636"
-    environment:
-    - LDAP_TLS=false
+    - "3000:3000"
     volumes:
-      - ./ldap/config:/etc/ldap/slapd.d:rw
-      - ./ldap/db:/var/lib/ldap:rw
-
-  phpldapadmin:
-    image: osixia/phpldapadmin:0.7.0
-    container_name: phpldapadmin
-    #net: local_network
-    ports:
-    - "8888:80"
-    environment:
-    - PHPLDAPADMIN_LDAP_HOSTS=ldap
-    - PHPLDAPADMIN_HTTPS=false
+    - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
 
   postgres:
     image: postgres:9
@@ -103,13 +64,32 @@ services:
     #volumes:
     #  - ./pg_data:/var/lib/postgresql/data:rw
 
+  #ldap:
+  #  image: osixia/openldap:1.2.0
+  #  container_name: ldap
+  #  #net: local_network
+  #  ports:
+  #  - "389:389"
+  #  - "636:636"
+  #  environment:
+  #  - LDAP_TLS=false
+  #  volumes:
+  #    - ./ldap/config:/etc/ldap/slapd.d:rw
+  #    - ./ldap/db:/var/lib/ldap:rw
+  #
+  #phpldapadmin:
+  #  image: osixia/phpldapadmin:0.7.0
+  #  container_name: phpldapadmin
+  #  #net: local_network
+  #  ports:
+  #  - "8888:80"
+  #  environment:
+  #  - PHPLDAPADMIN_LDAP_HOSTS=ldap
+  #  - PHPLDAPADMIN_HTTPS=false
 
 networks:
   default:
-    external:
-      name: local_network
-
-
+    name: local_network
 
 #$ docker run --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=myapp -d postgres
 
