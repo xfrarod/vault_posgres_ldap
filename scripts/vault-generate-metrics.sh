@@ -1,15 +1,14 @@
 #!/bin/bash
 export VAULT_ADDR="http://127.0.0.1:8200/"
-LOGFILE="perfout.log"
+LOGFILE="vault_generate_secrets.log"
 rm -f ${LOGFILE}
 
-echo "vault login...."
-vault login -no-print  $(grep 'Initial Root Token' .vault-init | awk '{print $NF}')
+echo "Vault login...."
+vault login -no-print \
+$(grep 'ROOT_TOKEN  =' ../README.md | awk '{print $NF}')
 
-echo "vault secrets enable .... "
-vault secrets enable -version=2 kv
-sleep 2
 
+echo "Generate Secrets"
 for i in {1..10}
   do
     printf "."
@@ -122,10 +121,10 @@ EOT
 done
 echo "done."
 
-sleep 2
-echo "enable userpass auth method"
-vault auth enable userpass
-echo "done."
+#sleep 2
+#echo "enable userpass auth method"
+#vault auth enable userpass
+#echo "done."
 
 sleep 2
 echo "add a perfuser user with password vtl-password"
@@ -183,3 +182,15 @@ done
 echo "done."
 
 
+echo "Generate Postgres Secrets"
+for i in {1..5}
+  do
+    printf "."
+    vault read /database/creds/my-role >> ${LOGFILE} 2>&1
+done
+
+for i in {1..10}
+  do
+    printf "."
+    vault read /database/creds/my-role >> ${LOGFILE} 2>&1
+done
