@@ -181,14 +181,23 @@ for i in {1..200}
 done
 echo "done."
 
+sleep 2
 
-echo "Generate Postgres Secrets"
+
+echo "Vault login...."
+vault login -no-print \
+$(grep 'ROOT_TOKEN  =' ../README.md | awk '{print $NF}')
+
+echo "Generate 5 Postgres Secrets"
 for i in {1..5}
   do
     printf "."
     vault read /database/creds/my-role >> ${LOGFILE} 2>&1
 done
 
+sleep 2
+
+echo "Generate 10 Postgres Secrets"
 for i in {1..10}
   do
     printf "."
