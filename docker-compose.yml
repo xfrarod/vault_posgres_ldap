@@ -22,47 +22,61 @@ services:
     - KEY5=bwPEaO85ixhLnTnAtJ4lPkbo+96U/GzzLOUxDXee6b4Z
     - ROOT_TOKEN=5d9e40a3-eb45-7e9b-53ff-e32a70dfabe0
 
-  statsd_exporter:
-    image: prom/statsd-exporter:v0.18.0
-    container_name: statsd_exporter
-    command: "--statsd.mapping-config=/tmp/statsd_mapping.conf"
-    ports:
-    - "9125:9125/udp"
-    - "9125:9125/tcp"
-    - "9102:9102"
-    volumes:
-    - ./statsd_mapping.conf:/tmp/statsd_mapping.conf
+#  statsd_exporter:
+#    image: prom/statsd-exporter:v0.18.0
+#    container_name: statsd_exporter
+#    command: "--statsd.mapping-config=/tmp/statsd_mapping.conf"
+#    ports:
+#    - "9125:9125/udp"
+#    - "9125:9125/tcp"
+#    - "9102:9102"
+#    volumes:
+#    - ./statsd_mapping.conf:/tmp/statsd_mapping.conf
+#
+#  prometheus:
+#    image: prom/prometheus:v2.21.0
+#    container_name: prometheus
+#    command: "--config.file=/tmp/prometheus.yml"
+#    ports:
+#    - "9090:9090"
+#    volumes:
+#    - "./prometheus.yml:/tmp/prometheus.yml"
+#
+#  grafana:
+#    image: grafana/grafana:7.2.0-ubuntu
+#    container_name: grafana
+#    ports:
+#    - "3000:3000"
+#    volumes:
+#    - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+#    - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+#
+#  postgres:
+#    image: postgres:9
+#    container_name: postgres
+#    #net: local_network
+#    ports:
+#    - "5432:5432"
+#    environment:
+#    - POSTGRES_DB=myapp
+#    - POSTGRES_USER=postgres
+#    - POSTGRES_PASSWORD=postgres
+#    #volumes:
+#    #  - ./pg_data:/var/lib/postgresql/data:rw
 
-  prometheus:
-    image: prom/prometheus:v2.21.0
-    container_name: prometheus
-    command: "--config.file=/tmp/prometheus.yml"
-    ports:
-    - "9090:9090"
-    volumes:
-    - "./prometheus.yml:/tmp/prometheus.yml"
-
-  grafana:
-    image: grafana/grafana:7.2.0-ubuntu
-    container_name: grafana
-    ports:
-    - "3000:3000"
-    volumes:
-    - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-    - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-
-  postgres:
-    image: postgres:9
-    container_name: postgres
-    #net: local_network
-    ports:
-    - "5432:5432"
-    environment:
-    - POSTGRES_DB=myapp
-    - POSTGRES_USER=postgres
-    - POSTGRES_PASSWORD=postgres
-    #volumes:
-    #  - ./pg_data:/var/lib/postgresql/data:rw
+  cassandra:
+      image: bitnami/cassandra:latest
+      container_name: cassandra
+      #net: local_network
+      ports:
+      - "7000:7000"
+      - "9160:9160"
+      - "9042:9042"
+      environment:
+      - CASSANDRA_CLUSTER_NAME=my-cassandra-database
+      - CASSANDRA_PASSWORD_SEEDER=yes
+#      volumes:
+#        - ./cassandra_data:/bitnami:rw
 
   #ldap:
   #  image: osixia/openldap:1.2.0
