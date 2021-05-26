@@ -14,24 +14,39 @@ resource "docker_network" "local_network" {
 module "vault" {
   source      = "./modules/vault"
   tag_version = "1.0.0"
+  depends_on = [
+    docker_network.local_network
+  ]
 }
 
 module "postgres" {
   source      = "./modules/postgres"
   tag_version = "9"
+  depends_on = [
+    docker_network.local_network
+  ]
 }
 
-#module statsd-exporter {
-#  source      = "./modules/statsd_exporter"
-#  tag_version = "v0.18.0"
-#}
-#
-#module prometheus {
-#  source      = "./modules/prometheus"
-#  tag_version = "v2.21.0"
-#}
-#
-#module grafana {
-#  source      = "./modules/grafana"
-#  tag_version = "7.2.0-ubuntu"
-#}
+module "statsd-exporter" {
+  source      = "./modules/statsd_exporter"
+  tag_version = "v0.18.0"
+  depends_on = [
+    docker_network.local_network
+  ]
+}
+
+module "prometheus" {
+  source      = "./modules/prometheus"
+  tag_version = "v2.21.0"
+  depends_on = [
+    docker_network.local_network
+  ]
+}
+
+module "grafana" {
+  source      = "./modules/grafana"
+  tag_version = "7.2.0-ubuntu"
+  depends_on = [
+    docker_network.local_network
+  ]
+}
