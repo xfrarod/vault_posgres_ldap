@@ -27,26 +27,26 @@ module "postgres" {
   ]
 }
 
-module "statsd-exporter" {
-  source      = "./modules/statsd_exporter"
-  tag_version = "v0.18.0"
-  depends_on = [
-    docker_network.local_network
-  ]
-}
-
-module "prometheus" {
-  source      = "./modules/prometheus"
-  tag_version = "v2.21.0"
-  depends_on = [
-    docker_network.local_network
-  ]
-}
-
-module "grafana" {
-  source      = "./modules/grafana"
-  tag_version = "7.2.0-ubuntu"
-  depends_on = [
-    docker_network.local_network
-  ]
-}
+//module "statsd-exporter" {
+//  source      = "./modules/statsd_exporter"
+//  tag_version = "v0.18.0"
+//  depends_on = [
+//    docker_network.local_network
+//  ]
+//}
+//
+//module "prometheus" {
+//  source      = "./modules/prometheus"
+//  tag_version = "v2.21.0"
+//  depends_on = [
+//    docker_network.local_network
+//  ]
+//}
+//
+//module "grafana" {
+//  source      = "./modules/grafana"
+//  tag_version = "7.2.0-ubuntu"
+//  depends_on = [
+//    docker_network.local_network
+//  ]
+//}
